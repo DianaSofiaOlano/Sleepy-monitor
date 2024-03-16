@@ -2,13 +2,13 @@ import java.util.Random;
 import java.util.concurrent.Semaphore;
 
 public class Student extends Thread{
-    private int id;
+    private long id;
     private Semaphore chairsAvailable;
     private Semaphore sleepingTutor;
     private Semaphore availableTutor;
     private Random GenAleat;
 
-    public Student (int id, Semaphore cA, Semaphore sT, Semaphore aT, long seed){
+    public Student (long id, Semaphore cA, Semaphore sT, Semaphore aT, long seed){
         super();
         this.id = id;
         chairsAvailable = cA;
