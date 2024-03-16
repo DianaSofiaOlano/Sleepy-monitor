@@ -38,13 +38,14 @@ public class Student extends Thread{
 
                         // Libera el semáforo del monitor disponible
                         availableTutor.release();
+                        
+                        // Libera la silla en el corredor
+                        chairsAvailable.release();
                     }
                     else {
                         // El monitor está ocupado
                         System.out.println("Estudiante con código "+id+" está esperando a que el monitor esté disponible");
                     }
-                    // Libera la silla en el corredor
-                    chairsAvailable.release();
                 }
                 else{
                     // Si no hay sillas disponibles, va a programar en la sala de computadoras
