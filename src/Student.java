@@ -26,20 +26,21 @@ public class Student extends Thread{
 
                     // Intenta obtener el semáforo de monitor disponible
                     if (availableTutor.tryAcquire()) {
-                        // El monitor está disponible, despiértalo si está dormido
-                        if (sleepingTutor.availablePermits() == 1) {
-                            sleepingTutor.acquire();
+                        // El monitor está disponible, verificar si está dormido
+                        if (sleepingTutor.tryAcquire()) {
                             System.out.println("Estudiante con código "+id+ " despierta al monitor");
                         }
 
                         // Simula tiempo recibiendo ayuda del monitor
-                        System.out.println("Estudiante con código "+id+" está recibiendo ayuda del monitor.");
+                        System.out.println("Estudiante con código "+id+" está recibiendo ayuda del monitor");
                         sleep(Math.abs(GenAleat.nextInt()) % 1000);
 
                         // Libera el semáforo del monitor disponible
+                        System.out.println("Monitor disponible");
                         availableTutor.release();
-                        
+
                         // Libera la silla en el corredor
+                        System.out.println("Silla disponible");
                         chairsAvailable.release();
                     }
                     else {
@@ -48,8 +49,8 @@ public class Student extends Thread{
                     }
                 }
                 else{
-                    // Si no hay sillas disponibles, va a programar en la sala de computadoras
-                    System.out.println("Estudiante con código "+id+" no encontró sillas disponibles en el corredor. Regresa a programar en la sala.");
+                    // Si no hay sillas disponibles, el estudiante va a programar a la sala de computadoras
+                    System.out.println("Estudiante con código "+id+" no encontró sillas disponibles, irá a programar en la sala");
                     sleep(Math.abs(GenAleat.nextInt()) % 1000);
                 }
             } catch (InterruptedException e) {
