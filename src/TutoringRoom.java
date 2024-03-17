@@ -1,48 +1,53 @@
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
+import java.util.Random;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Semaphore;
 
 public class TutoringRoom {
+
+    static final int NUM_STUDENTS = 5;
+    static final int NUM_CHAIRS = 3;
+
     public static void main(String[] args) {
         if (args.length != 1) {
-            System.out.println("Sintaxis: Carrera semilla_aleatoria");
+            System.out.println("Sintaxis: TutoringRoom semilla_aleatoria");
             System.exit(1);
         }
 
-        long seed=Long.parseLong(args[0]);
-
-        int numStudents = 5;
-        int numChairs = 3;
+        long seed = Long.parseLong(args[0]);
+        Random randomNumberGenerator = new Random(seed);
 
         // Define semáforos
-        Semaphore chairsAvailable = new Semaphore(numChairs); // Semáforo para controlar el acceso a las sillas
-        Semaphore sleepingTutor = new Semaphore(0, true); // Semáforo para indicar si el monitor está dormido
-        Semaphore availableTutor = new Semaphore(1, true); // Semáforo para indicar si el monitor está disponible
+        Semaphore sleepingTutorSemaphore = new Semaphore(0, true); // Semáforo para indicar si el monitor está dormido
+        Semaphore tutorSemaphore = new Semaphore(1, true); // Semáforo para indicar si el monitor está disponible
+        Semaphore chairsSemaphore = new Semaphore(1, true); //Semáforo para controlar el acceso a las sillas
 
         // Creación de la cola para mantener el orden de llegada de los estudiantes
-        ConcurrentLinkedQueue<Long> waitingStudents = new ConcurrentLinkedQueue<>();
+        BlockingQueue<Student> chairs = new ArrayBlockingQueue<>(NUM_CHAIRS);
 
         //Creación del monitor
-        Tutor tutor = new Tutor(sleepingTutor, availableTutor, waitingStudents, seed);
+        Tutor tutor = new Tutor(sleepingTutorSemaphore, chairsSemaphore, chairs, randomNumberGenerator);
 
         //Creación de los estudiantes
-        Student[] students = new Student[numStudents];
-        for (int i = 0; i < numStudents; i++) {
-            students[i] = new Student(i, chairsAvailable, sleepingTutor, availableTutor, waitingStudents, seed);
+        Student[] students = new Student[NUM_STUDENTS];
+        for (int i = 0; i < NUM_STUDENTS; i++) {
+            students[i] = new Student(i, tutorSemaphore, tutor, chairsSemaphore, chairs, randomNumberGenerator);
         }
 
         //Iniciar los hilos
         tutor.start();
-        for (int i = 0; i < students.length; i++) {
-            students[i].start();
+        for (Student student : students) {
+            student.start();
         }
 
         // Esperar a que todos los estudiantes sean atendidos
         try {
-            for (int i = 0; i < students.length; i++) {
-                students[i].join();
+            for (Student student : students) {
+                student.join();
             }
             tutor.interrupt(); // Detener el hilo del monitor
-        } catch (InterruptedException e) {
+        } catch (InterruptedException ignored) {
         }
     }
 }

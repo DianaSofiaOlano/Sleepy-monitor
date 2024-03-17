@@ -1,51 +1,72 @@
+import java.util.Queue;
 import java.util.Random;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
 public class Tutor extends Thread{
-    private Semaphore sleepingTutor;
-    private Semaphore availableTutor;
-    private ConcurrentLinkedQueue<Long> waitingStudents;
-    private Random GenAleat;
+    private final Semaphore sleepingTutorSemaphore;
+    private final Semaphore chairsSemaphore;
+    private final Queue<Student> chairs;
+    private final Random randomNumberGenerator;
 
-    public Tutor (Semaphore sT, Semaphore aT, ConcurrentLinkedQueue<Long> wS, long seed){
+    private boolean sleeping;
+
+    public Tutor (Semaphore sleepingTutorSemaphore, Semaphore chairsSemaphore, Queue<Student> chairs, Random randomNumberGenerator){
         super();
-        sleepingTutor = sT;
-        availableTutor = aT;
-        waitingStudents = wS;
-        GenAleat = new Random(seed);
+        this.sleepingTutorSemaphore = sleepingTutorSemaphore;
+        this.chairsSemaphore = chairsSemaphore;
+        this.chairs = chairs;
+        this.randomNumberGenerator = randomNumberGenerator;
+    }
+
+    private void sleep() throws InterruptedException {
+        sleeping = true;
+        System.out.println("El monitor está durmiendo");
+        sleepingTutorSemaphore.acquire();
+    }
+
+    public void wakeUp(Student student){
+        sleeping = false;
+        sleepingTutorSemaphore.release();
+        //System.out.println("El monitor fue despertado por el estudiante con código " + student.getStudId());
     }
 
     @Override
     public void run() {
-        while (true) {
-            try {
-                // The tutor always tries to sleep after helping a student
-                System.out.println("Tutor está durmiendo");
-                sleepingTutor.acquire();
-
-                // Adquirir el semáforo availableTutor antes de atender a un estudiante
-                availableTutor.acquire();
-
-                // Atiende a los estudiantes en espera en el orden en que llegaron
-                Long studentId = waitingStudents.poll();
-                if (studentId != null) {
-                    System.out.println("El monitor está ayudando al estudiante con código: " + studentId);
-                    sleep(Math.abs(GenAleat.nextInt()) % 2000);;
-                    System.out.println("El monitor ha terminado de ayudar al estudiante con código: " + studentId);
-
-                    // Release the availableTutor semaphore to indicate that the tutor is available
-                    System.out.println("Monitor disponible");
-                    availableTutor.release();
+        try {
+            sleep();
+            while (true) {
+                chairsSemaphore.acquire();
+                if(chairs.isEmpty()){
+                    //Si las sillas están vacías no hay estudiantes esperando y el monitor se duerme
+                    System.out.println("No hay estudiantes esperando");
+                    chairsSemaphore.release();
+                    sleep();
                 }
-
                 else{
-                    // Si no hay estudiantes en espera, el monitor se duerme
-                    System.out.println("No hay estudiantes esperando, el monitor se duerme");
-                    sleepingTutor.release();
+                    //Si hay estudiantes sentados, atiende al siguiente, en orden
+                    helpNextStudent();
                 }
-            } catch (InterruptedException e) {
             }
+        } catch (InterruptedException ignored) {
         }
+
     }
+
+    public boolean isSleeping() {
+        return sleeping;
+    }
+
+    public void helpNextStudent() throws InterruptedException {
+        // Atiende a los estudiantes en espera en el orden en que llegaron
+        Student student = chairs.poll();
+        chairsSemaphore.release();
+
+        System.out.println("El monitor está ayudando al estudiante con código: " + student.getStudId());
+        sleep(Math.abs(randomNumberGenerator.nextInt()) % 2000);;
+        System.out.println("El monitor ha terminado de ayudar al estudiante con código: " + student.getStudId());
+
+        //Desbloquea el hilo del estudiante una vez termina de ayudarle
+        student.getWaitingForHelpQueue().take();
+    }
+
 }

@@ -1,58 +1,82 @@
+import java.util.Queue;
 import java.util.Random;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.*;
 
 public class Student extends Thread{
-    private long id;
-    private Semaphore chairsAvailable;
-    private Semaphore sleepingTutor;
-    private Semaphore availableTutor;
-    private ConcurrentLinkedQueue<Long> waitingStudents;
-    private Random GenAleat;
+    public long getStudId() {
+        return studId;
+    }
 
-    public Student (long id, Semaphore cA, Semaphore sT, Semaphore aT, ConcurrentLinkedQueue<Long> wS, long seed){
+    private final long studId;
+    private final Semaphore tutorSemaphore;
+    private final Semaphore chairsSemaphore;
+    private final Tutor tutor;
+    private final Queue<Student> chairs;
+    private final SynchronousQueue<Student> waitingForHelpQueue;
+    private final Random randomNumberGenerator;
+
+    public Student (long studId, Semaphore tutorSemaphore, Tutor tutor, Semaphore chairsSemaphore, BlockingQueue<Student> chairs, Random randomNumberGenerator){
         super();
-        this.id = id;
-        chairsAvailable = cA;
-        sleepingTutor = sT;
-        availableTutor = aT;
-        waitingStudents = wS;
-        GenAleat = new Random(seed);;
+        this.studId = studId;
+        this.tutorSemaphore = tutorSemaphore;
+        this.tutor = tutor;
+        this.chairsSemaphore = chairsSemaphore;
+        this.chairs = chairs;
+        waitingForHelpQueue = new SynchronousQueue<>();
+        this.randomNumberGenerator = randomNumberGenerator;
     }
 
     @Override
     public void run() {
-        while (true) {
-            try {
-                if (chairsAvailable.tryAcquire()) {
-                    // El estudiante se añade a la cola de espera
-                    waitingStudents.add(id);
-                    System.out.println("Estudiante con código "+id+" encontró una silla en el corredor y está esperando");
+        try {
+            boolean helpReceived = false;
+            System.out.println("Estudiante con código "+ studId +" está programando en la sala");
+            programInComputerRoom();
+            while (!helpReceived) {
+                //Limita la cola de las sillas y el hilo del monitor para que puedan ser usados por un solo hilo
+                //Esto para evitar conflictos
+                chairsSemaphore.acquire();
+                tutorSemaphore.acquire();
 
-                    // Esperar a que el monitor esté disponible
-                    availableTutor.acquire();
+                if(tutor.isSleeping()){
+                    //Si el monitor está dormido, lo despierta
+                    tutor.wakeUp(this);
+                    System.out.println("Estudiante con código " + studId + " despierta al monitor.");
+                }
 
-                    if (sleepingTutor.tryAcquire()) {
-                        // Si el monitor está dormido, despertarlo
-                        System.out.println("Estudiante con código " + id + " despierta al monitor.");
-                        sleepingTutor.release();// Release the sleepingTutor semaphore to wake up the tutor
-                    }
-
-                    // Simula tiempo recibiendo ayuda del monitor
-                    System.out.println("Estudiante con código "+id+" está recibiendo ayuda del monitor");
-                    sleep(Math.abs(GenAleat.nextInt()) % 2000);
-
-                    // Libera la silla en el corredor
-                    System.out.println("Estudiante con código "+id +" ha sido atendido y deja la silla disponible");
-                    chairsAvailable.release();
+                if (!chairs.offer(this)){
+                    // Si no hay sillas disponibles, el estudiante va a programar a la sala de computadoras
+                    System.out.println("Estudiante con código "+ studId +" no encontró sillas disponibles, fue a programar a la sala");
+                    chairsSemaphore.release();
+                    tutorSemaphore.release();
+                    programInComputerRoom();
+                    continue;
                 }
                 else{
-                    // Si no hay sillas disponibles, el estudiante va a programar a la sala de computadoras
-                    System.out.println("Estudiante con código "+id+" no encontró sillas disponibles, irá a programar en la sala");
-                    sleep(Math.abs(GenAleat.nextInt()) % 3000);
+                    //Sí hay sillas, se sienta a esperar a que el monitor lo llame
+                    System.out.println("Estudiante con código "+ studId +" encontró una silla en el corredor y está esperando");
                 }
-            } catch (InterruptedException e) {
+
+                chairsSemaphore.release();
+                tutorSemaphore.release();
+
+                waitingForHelpQueue.put(this); //Bloquea el hilo del estudiante mientras espera y mientras recibe la ayuda
+                helpReceived = true;
             }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
+
+    }
+
+    private void programInComputerRoom() throws InterruptedException {
+        //System.out.println("Estudiante con código "+ studId +" está programando en la sala");
+        sleep(Math.abs(randomNumberGenerator.nextInt()) % 3000);
+    }
+
+    public SynchronousQueue<Student> getWaitingForHelpQueue() {
+        return waitingForHelpQueue;
     }
 }
+
+
