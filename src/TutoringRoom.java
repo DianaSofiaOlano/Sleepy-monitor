@@ -1,3 +1,6 @@
+// Proyecto EL MONITOR DORMILÓN - Clase TutoringRoom
+// Sistemas Operacionales - Juan Fernando Martínez Hidalgo y Diana Sofia Olano Montaño
+
 import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;

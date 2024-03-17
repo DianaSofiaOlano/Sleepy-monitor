@@ -1,3 +1,6 @@
+// Proyecto EL MONITOR DORMILÓN - Clase Tutor
+// Sistemas Operacionales - Juan Fernando Martínez Hidalgo y Diana Sofia Olano Montaño
+
 import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
