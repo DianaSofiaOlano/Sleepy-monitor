@@ -3,17 +3,13 @@ import java.util.Random;
 import java.util.concurrent.*;
 
 public class Student extends Thread{
-    public long getStudId() {
-        return studId;
-    }
-
-    private final long studId;
-    private final Semaphore tutorSemaphore;
-    private final Semaphore chairsSemaphore;
-    private final Tutor tutor;
-    private final Queue<Student> chairs;
-    private final SynchronousQueue<Student> waitingForHelpQueue;
-    private final Random randomNumberGenerator;
+    private final long studId; // ID del estudiante
+    private final Semaphore tutorSemaphore; // Semáforo para controlar el acceso al tutor
+    private final Semaphore chairsSemaphore; // Semáforo para controlar el acceso a las sillas
+    private final Tutor tutor; // Objeto Tutor
+    private final Queue<Student> chairs; // Cola para las sillas
+    private final SynchronousQueue<Student> waitingForHelpQueue; // Cola para los estudiantes que esperan ayuda
+    private final Random randomNumberGenerator; // Generador de números aleatorios
 
     public Student (long studId, Semaphore tutorSemaphore, Tutor tutor, Semaphore chairsSemaphore, BlockingQueue<Student> chairs, Random randomNumberGenerator){
         super();
@@ -32,6 +28,7 @@ public class Student extends Thread{
             boolean helpReceived = false;
             System.out.println("Estudiante con código "+ studId +" está programando en la sala");
             programInComputerRoom();
+
             while (!helpReceived) {
                 //Limita la cola de las sillas y el hilo del monitor para que puedan ser usados por un solo hilo
                 //Esto para evitar conflictos
@@ -41,7 +38,7 @@ public class Student extends Thread{
                 if(tutor.isSleeping()){
                     //Si el monitor está dormido, lo despierta
                     tutor.wakeUp(this);
-                    System.out.println("Estudiante con código " + studId + " despierta al monitor.");
+                    System.out.println("Estudiante con código " + studId + " despierta al monitor");
                 }
 
                 if (!chairs.offer(this)){
@@ -57,6 +54,7 @@ public class Student extends Thread{
                     System.out.println("Estudiante con código "+ studId +" encontró una silla en el corredor y está esperando");
                 }
 
+                //Se libera los semáforos
                 chairsSemaphore.release();
                 tutorSemaphore.release();
 
@@ -66,14 +64,19 @@ public class Student extends Thread{
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-
     }
 
+    // Método para obtener el ID del estudiante
+    public long getStudId() {
+        return studId;
+    }
+
+    // Método para simular la programación en la sala de computadoras
     private void programInComputerRoom() throws InterruptedException {
-        //System.out.println("Estudiante con código "+ studId +" está programando en la sala");
         sleep(Math.abs(randomNumberGenerator.nextInt()) % 3000);
     }
 
+    // Método para obtener la cola de estudiantes que esperan ayuda
     public SynchronousQueue<Student> getWaitingForHelpQueue() {
         return waitingForHelpQueue;
     }
