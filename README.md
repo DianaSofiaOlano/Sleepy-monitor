@@ -11,12 +11,12 @@ Para resolver este problema, se han implementado hilos en Java para representar 
 + **Monitor:** El monitor también se ejecuta como un hilo independiente. Si está dormido y un estudiante lo despierta, atiende al estudiante y luego revisa el corredor para ayudar a los demás estudiantes en orden de llegada. Si no hay estudiantes presentes, el monitor puede volver a dormirse.
 
 ## Requisitos previos 📋
-+ Debes tener java versión 17 o superior para ejecutar correctamente el programa.
++ Debes tener Java versión 17 o superior para ejecutar correctamente el programa.
 + Un editor de código con el que te sientas familiarizado en el entorno Java.
 
 ## Autores 👨‍💻👩‍💻
 + [JuanF2019](https://github.com/JuanF2019)
-+ [DianaSofiaOlano](https://github.com/DianaOlanoU)
++ [DianaSofiaOlano](https://github.com/DianaSofiaOlano)
 
 ## Documentación 📚
-### [Diagrama de secuencia](https://github.com/DianaSofiaOlano/Sleepy-monitor/blob/master/docs/sleepy-monitor-seq-diag-wakeup.pdf "PDF")
+### [Diagrama de secuencia](https://github.com/DianaSofiaOlano/Sleepy-monitor/blob/master/docs/sleepy-monitor-seq-diag-wakeup.pdf)
